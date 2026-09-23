@@ -13588,10 +13588,9 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         }
         const firecrawl = customMcpServers(cfg).firecrawl;
         if (!firecrawl) return json(res, 409, { error: "Firecrawl is not enabled in this workspace" });
-        const inScope = (bot: BotRecord) => !bot.hidden && (
-          sectionKey(bot.section) === sectionKey(chief.section) ||
-          (chief.managedSections ?? []).some((name) => sectionKey(name) === sectionKey(bot.section))
-        );
+        // Keeper is the workspace-level access owner: future bots may live in
+        // sections created after this Chief was configured.
+        const inScope = (bot: BotRecord) => !bot.hidden;
         if (method === "GET") {
           return json(res, 200, { server: "firecrawl", bots: store.bots.filter(inScope).map((bot) => ({
             id: bot.id, name: bot.name, section: bot.section,
@@ -13606,7 +13605,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
           return json(res, 400, { error: "targetBotId and action grant or revoke are required" });
         }
         const target = store.bot(targetBotId);
-        if (!target || !inScope(target)) return json(res, 404, { error: "no bot in this Chief's scope has that id" });
+        if (!target || !inScope(target)) return json(res, 404, { error: "no visible bot has that id" });
         if (target.busy || activeGroupTurnForBot(target.id) ||
             store.tasks(target.id).some((task) => threadBusy(target.id, task.threadId))) {
           return json(res, 409, { error: "wait for the target bot's turns to finish before changing MCP access" });

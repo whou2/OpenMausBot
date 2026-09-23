@@ -37,7 +37,7 @@ it("lets only the configured Chief grant and revoke Firecrawl while new bots def
   };
   const control = (args: string[]) => runControlOmb([...args, "--url", fixture.info.url]);
   try {
-    const created = await api("POST", "/api/bots", { name: "Future specialist", section: "Bots" });
+    const created = await api("POST", "/api/bots", { name: "Future specialist", section: "Research" });
     expect(created.status).toBe(201);
     const target = created.body.bot;
     expect((await api("GET", "/api/bots?messages=0")).body.bots.find((bot: any) => bot.id === target.id).mcpServers).toEqual(["context7"]);

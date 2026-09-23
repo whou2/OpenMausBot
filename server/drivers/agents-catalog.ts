@@ -374,7 +374,7 @@ const toolDefinitions = (externalRuntime: boolean) => [
   },
   {
     name: "manage_firecrawl_access",
-    description: "Keeper-only: list which bots can use Firecrawl, or grant/revoke Firecrawl for an idle bot in your authorized teams. New bots start without Firecrawl. Preserve all other MCP connections. Use list first, then an exact bot id. A grant lets that bot use the workspace Firecrawl key and credits; a revoke stops future turns, not work already running.",
+    description: "Keeper-only: list which workspace bots can use Firecrawl, or grant/revoke Firecrawl for an idle bot. New bots start without Firecrawl. Preserve all other MCP connections. Use list first, then an exact bot id. A grant lets that bot use the workspace Firecrawl key and credits; a revoke stops future turns, not work already running.",
     inputSchema: {
       type: "object", additionalProperties: false,
       properties: {
