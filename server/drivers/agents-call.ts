@@ -748,6 +748,20 @@ export async function callTool(name: string, args: Json, context: ToolCallContex
       text: `Created @${r.name ?? botName} in ${r.section ?? "General"} [id: ${r.id}]. Assign work with ${COORDINATING ? "coordinate_bots" : "delegate_bot"}.`,
     };
   }
+  if (name === "manage_firecrawl_access") {
+    const action = String(args.action ?? "");
+    if (action === "list") {
+      return { text: JSON.stringify(await api("/api/internal/mcp-access")) };
+    }
+    const targetBotId = String(args.bot_id ?? "").trim();
+    if ((action !== "grant" && action !== "revoke") || !targetBotId) {
+      return { text: "Use action list, or action grant/revoke with an exact bot_id from list.", isError: true };
+    }
+    const result = await api("/api/internal/mcp-access", {
+      method: "POST", body: JSON.stringify({ targetBotId, action }),
+    });
+    return { text: JSON.stringify(result) };
+  }
   if (name === "create_room") {
     if (args.section !== undefined) return { text: "Room sections are fixed to your own section; ask the user to move rooms.", isError: true };
     const roomName = String(args.name ?? "").trim();

@@ -28,6 +28,8 @@ export interface CatalogProfile {
   sharedComputers: boolean;
   /** Written into start_thread's schema in a coordinating turn. */
   botId: string;
+  /** Exact bot id allowed to change Firecrawl access on this deployment. */
+  mcpGrantAdminBotId?: string;
 }
 
 /** The profile a spawned proxy was given. Everything is off unless the
@@ -41,6 +43,7 @@ export function catalogProfileFromEnv(env: NodeJS.ProcessEnv): CatalogProfile {
     skillAuthoring: env.OMB_SKILL_AUTHORING_ENABLED === "1",
     sharedComputers: env.OMB_SHARED_COMPUTERS_ENABLED === "1",
     botId: env.OMB_BOT_ID ?? "",
+    mcpGrantAdminBotId: env.OMB_MCP_GRANT_ADMIN_BOT_ID?.trim() || undefined,
   };
 }
 
@@ -367,6 +370,18 @@ const toolDefinitions = (externalRuntime: boolean) => [
         instructions: { type: "string", description: "What this specialist is responsible for and how it should work." },
       },
       required: ["name", "role", "instructions"],
+    },
+  },
+  {
+    name: "manage_firecrawl_access",
+    description: "Keeper-only: list which bots can use Firecrawl, or grant/revoke Firecrawl for an idle bot in your authorized teams. New bots start without Firecrawl. Preserve all other MCP connections. Use list first, then an exact bot id. A grant lets that bot use the workspace Firecrawl key and credits; a revoke stops future turns, not work already running.",
+    inputSchema: {
+      type: "object", additionalProperties: false,
+      properties: {
+        action: { type: "string", enum: ["list", "grant", "revoke"] },
+        bot_id: { type: "string", description: "Exact target id from list; required for grant or revoke." },
+      },
+      required: ["action"],
     },
   },
   {
@@ -701,10 +716,13 @@ export function availableTools(profile: CatalogProfile) {
   const SHAREABLE_TOOLS = profile.sharedComputers
     ? AUTHORING_TOOLS
     : AUTHORING_TOOLS.filter((tool) => !SHARED_COMPUTER_TOOL_NAMES.has(tool.name));
+  const DELEGATED_TOOLS = profile.mcpGrantAdminBotId && profile.botId === profile.mcpGrantAdminBotId
+    ? SHAREABLE_TOOLS
+    : SHAREABLE_TOOLS.filter((tool) => tool.name !== "manage_firecrawl_access");
   return profile.externalRuntime
     ? TOOLS.filter(tool => EXTERNAL_TOOL_NAMES.has(tool.name))
     : profile.coordinating
-    ? SHAREABLE_TOOLS.filter(tool => !ROOM_REPLACED_TOOLS.has(tool.name) || (tool.name === "start_thread" && profile.ownThreadCreation))
+    ? DELEGATED_TOOLS.filter(tool => !ROOM_REPLACED_TOOLS.has(tool.name) || (tool.name === "start_thread" && profile.ownThreadCreation))
       .map(tool => tool.name === "start_thread" ? {
         ...tool,
         description: "Open a separate job on yourself with its own history and run, without switching the person's selected conversation. Use only when the user requests independent jobs (for example one review per pull request). Give a short specific title and complete instructions; you can open at most five per turn. This is not a teammate handoff: use coordinate_bots for teammates and their automatic replies. Self-opened jobs cannot recursively open more jobs. If refused, do not retry; explain what remains.",
@@ -712,5 +730,5 @@ export function availableTools(profile: CatalogProfile) {
           bot_id: { type: "string", enum: [profile.botId], description: "Leave out, or use your own bot ID. For teammates use coordinate_bots." },
         } },
       } : tool)
-    : SHAREABLE_TOOLS.filter(tool => !ROOM_ONLY_TOOLS.has(tool.name));
+    : DELEGATED_TOOLS.filter(tool => !ROOM_ONLY_TOOLS.has(tool.name));
 }

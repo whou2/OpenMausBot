@@ -267,6 +267,13 @@ describe("agents proxy tools/list from the packaged bundle", () => {
 });
 
 describe("agents proxy tools/list wire size", () => {
+  it("advertises Firecrawl delegation only to the configured bot", () => {
+    const keeper = catalogProfileFromEnv({ OMB_BOT_ID: "keeper", OMB_MCP_GRANT_ADMIN_BOT_ID: "keeper" });
+    const other = catalogProfileFromEnv({ OMB_BOT_ID: "other", OMB_MCP_GRANT_ADMIN_BOT_ID: "keeper" });
+    expect(availableTools(keeper).some((tool) => tool.name === "manage_firecrawl_access")).toBe(true);
+    expect(availableTools(other).some((tool) => tool.name === "manage_firecrawl_access")).toBe(false);
+  });
+
   it("prints per-tool and total UTF-8 bytes", () => {
     const shown = Object.values(FULL);
     const perTool = new Map<string, Record<string, number>>();

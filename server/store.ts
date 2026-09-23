@@ -11,7 +11,7 @@ import { ensureSections, readSections, changeEmptySection } from "./section-cont
 import { removeBotFolder, soulFile, soulHash, writeSoulMirror } from "./bot-folder.ts";
 import type { BotProfilePatch } from "./bot-profile.ts";
 import { peerAllowKey, type PeerAction } from "./peer-approval-key.ts";
-import { DATA_DIR, EVENTS_DIR, NATIVE_DIR, loadBrowserProfileIdAliases } from "./config.ts";
+import { DATA_DIR, EVENTS_DIR, NATIVE_DIR, loadBrowserProfileIdAliases, loadConfig } from "./config.ts";
 import * as mdb from "./message-db.ts";
 import { runCommand, type Command } from "./commands.ts";
 import { workspaceDir } from "./workspace.ts";
@@ -37,6 +37,16 @@ export type {
 } from "../shared/wire.ts";
 export type { GroupTask as GroupTaskRecord, BotProject as BotProjectRecord } from "../shared/wire.ts";
 export type { InstalledPlaybook, InstalledPackageMetadata, MausColor, MausExpression } from "../shared/wire.ts";
+
+/** Optional deployment policy: new bots start without named MCP servers,
+ * while retaining the servers already enabled for ordinary inheritance. */
+function initialMcpServers(): string[] | undefined {
+  const denied = new Set((process.env.OMB_MCP_NEW_BOT_DENY ?? "").split(",").map((name) => name.trim()).filter(Boolean));
+  if (!denied.size) return undefined;
+  const names = Object.keys(loadConfig().mcpServers ?? {});
+  if (!names.some((name) => denied.has(name))) return undefined;
+  return names.filter((name) => !denied.has(name));
+}
 
 
 /** One transcript line, serialized as stored — the shared wire shape. */
@@ -1492,6 +1502,7 @@ export class Store {
     this.rememberSections([profile.section]);
     const name = profile.name?.trim() || pickBotName(this.bots.map((b) => b.name));
     const section = sectionKey(profile.section);
+    const mcpServers = initialMcpServers();
     const bot: BotRecord = {
       id: newId(),
       threadId: newId(),
@@ -1506,6 +1517,7 @@ export class Store {
       ...(profile.mascotBody ? { mascotBody: profile.mascotBody } : {}),
       unread: false,
       modelSelection: profile.modelSelection ?? this.defaultSelection(),
+      ...(mcpServers !== undefined ? { mcpServers } : {}),
       resumeCursors: {},
       createdAt: Date.now(),
     };
@@ -1562,9 +1574,11 @@ export class Store {
       if (operation.action === "create") {
         if (at >= 0 || !operation.threadId || !operation.fields.name || !operation.fields.modelSelection) throw new Error("Invalid new bot in team setup");
         const createdAt = Date.now();
+        const mcpServers = initialMcpServers();
         next = { id: operation.botId, threadId: operation.threadId, name: operation.fields.name,
           title: "", description: "", soul: "", notifications: true, color: COLORS[nextBots.length % COLORS.length], unread: false,
           modelSelection: operation.fields.modelSelection, resumeCursors: {}, createdAt, ...operation.fields,
+          ...(mcpServers !== undefined ? { mcpServers } : {}),
           approvalMode: "ask", autoApprove: false, composio: false, approvePeerComms: false,
           tasks: [{ threadId: operation.threadId, title: UNTITLED_THREAD, createdAt, updatedAt: createdAt, resumeCursors: {},
             modelSelection: structuredClone(operation.fields.modelSelection), approvalMode: "ask", autoApprove: false,

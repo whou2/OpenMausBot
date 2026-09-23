@@ -369,6 +369,9 @@ export function verificationServerEnvironment(parentEnv: NodeJS.ProcessEnv, data
     // FAKE_CLAUDE_DUMP stays the launcher's: assertions read fixtureDumpPath.
     if (key.startsWith("FAKE_CLAUDE_") && key !== "FAKE_CLAUDE_DUMP" && value) childEnv[key] = value;
   }
+  for (const key of ["OMB_MCP_NEW_BOT_DENY", "OMB_MCP_GRANT_ADMIN_BOT_ID"]) {
+    if (parentEnv[key]) childEnv[key] = parentEnv[key];
+  }
   return childEnv;
 }
 
@@ -386,6 +389,8 @@ export async function launchVerificationServer(
   extraProviders: Array<"codex"> = [],
   /** Programmatic tests only: an owned loopback Box provider, never a live account. */
   boxFixtureApi?: string,
+  /** Seed synthetic records before this isolated fixture starts. */
+  seedData?: (dataDir: string) => void,
 ): Promise<VerificationServer> {
   if (boxFixtureApi) {
     if (!/^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(boxFixtureApi)) {
@@ -429,6 +434,7 @@ export async function launchVerificationServer(
       },
     },
   }, null, 2));
+  seedData?.(dataDir);
 
   const log = openSync(logPath, "a", 0o600);
   const childEnv = verificationServerEnvironment(parentEnv, dataDir, port);

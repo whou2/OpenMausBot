@@ -142,6 +142,25 @@ describe("Store", () => {
     expect(bot.modelSelection).toEqual(selection());
   });
 
+  it("starts new bots without deployment-denied MCP servers while retaining the others", () => {
+    const previous = process.env.OMB_MCP_NEW_BOT_DENY;
+    try {
+      process.env.OMB_MCP_NEW_BOT_DENY = "firecrawl";
+      mkdirSync(DATA_DIR, { recursive: true });
+      writeFileSync(join(DATA_DIR, "config.json"), JSON.stringify({ mcpServers: {
+        firecrawl: { type: "http", url: "https://mcp.firecrawl.dev/v2/mcp", enabled: true },
+        context7: { type: "http", url: "https://mcp.context7.com/mcp", enabled: true },
+      } }));
+      const store = new Store(selection);
+      const bot = store.createBot({ name: "Future bot" }, { seedMessages: false });
+      expect(bot.mcpServers).toEqual(["context7"]);
+      expect(new Store(selection).bot(bot.id)?.mcpServers).toEqual(["context7"]);
+    } finally {
+      if (previous === undefined) delete process.env.OMB_MCP_NEW_BOT_DENY;
+      else process.env.OMB_MCP_NEW_BOT_DENY = previous;
+    }
+  });
+
   it("clears provider-owned voice ids as one durable mutation", () => {
     const store = new Store(selection);
     const first = store.createBot();

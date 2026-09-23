@@ -1399,6 +1399,7 @@ function agentsIntegration(
       // The shared-computer tools are advertised only while the workspace
       // gate is on; the routes behind them refuse regardless.
       OMB_SHARED_COMPUTERS_ENABLED: sharedComputersEnabled(cfg) ? "1" : "0",
+      OMB_MCP_GRANT_ADMIN_BOT_ID: process.env.OMB_MCP_GRANT_ADMIN_BOT_ID ?? "",
     },
   };
 }
@@ -13577,6 +13578,56 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
           limit,
           ...(position > limit ? { state: "queued", position: position - limit } : { state: "pending" }),
         });
+      }
+      if ((method === "GET" || method === "POST") && path === "/api/internal/mcp-access") {
+        const chief = internalSender;
+        const delegatedId = process.env.OMB_MCP_GRANT_ADMIN_BOT_ID?.trim();
+        if (!delegatedId || chief.id !== delegatedId || !chief.chiefOfStaff || chief.hidden ||
+            !connectorThread(chief.id, internalCapability.threadId)) {
+          return json(res, 403, { error: "this Chief is not authorized to manage MCP access" });
+        }
+        const firecrawl = customMcpServers(cfg).firecrawl;
+        if (!firecrawl) return json(res, 409, { error: "Firecrawl is not enabled in this workspace" });
+        const inScope = (bot: BotRecord) => !bot.hidden && (
+          sectionKey(bot.section) === sectionKey(chief.section) ||
+          (chief.managedSections ?? []).some((name) => sectionKey(name) === sectionKey(bot.section))
+        );
+        if (method === "GET") {
+          return json(res, 200, { server: "firecrawl", bots: store.bots.filter(inScope).map((bot) => ({
+            id: bot.id, name: bot.name, section: bot.section,
+            enabled: Boolean(customMcpServers(cfg, bot.mcpServers).firecrawl),
+            busy: Boolean(bot.busy),
+          })) });
+        }
+        const body = await readInternalBody();
+        const targetBotId = typeof body.targetBotId === "string" ? body.targetBotId.trim() : "";
+        const action = body.action;
+        if (!/^[\w-]+$/.test(targetBotId) || (action !== "grant" && action !== "revoke")) {
+          return json(res, 400, { error: "targetBotId and action grant or revoke are required" });
+        }
+        const target = store.bot(targetBotId);
+        if (!target || !inScope(target)) return json(res, 404, { error: "no bot in this Chief's scope has that id" });
+        if (target.busy || activeGroupTurnForBot(target.id) ||
+            store.tasks(target.id).some((task) => threadBusy(target.id, task.threadId))) {
+          return json(res, 409, { error: "wait for the target bot's turns to finish before changing MCP access" });
+        }
+        const before = Boolean(customMcpServers(cfg, target.mcpServers).firecrawl);
+        const selected = target.mcpServers ?? Object.keys(cfg.mcpServers ?? {});
+        const next = action === "grant"
+          ? [...new Set([...selected, "firecrawl"])]
+          : selected.filter((name) => name !== "firecrawl");
+        if (before !== (action === "grant")) {
+          store.patchBot(target.id, { mcpServers: next });
+          appendAdminAction(DATA_DIR, {
+            category: "mcp", action: action === "grant" ? "mcp.bot-grant" : "mcp.bot-revoke",
+            target: { kind: "bot", id: target.id, name: target.name },
+            changed: ["mcpServers.firecrawl"], before: { firecrawl: before },
+            after: { firecrawl: action === "grant", delegatedByBotId: chief.id },
+            actor: { kind: "worker" },
+          });
+        }
+        return json(res, 200, { server: "firecrawl", botId: target.id, name: target.name,
+          enabled: action === "grant", changed: before !== (action === "grant") });
       }
       if (method === "POST" && path === "/api/internal/create-bot") {
         const body = await readInternalBody();
