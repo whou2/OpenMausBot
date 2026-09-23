@@ -36,7 +36,7 @@ FROM node:24-bookworm-slim
 # invokes sudo even as root, and this image deliberately does not ship sudo.
 # git + curl: agent CLIs shell out to git; curl backs the healthcheck
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git \
+  && apt-get install -y --no-install-recommends ca-certificates curl git openssh-client \
     libxcb-shm0 libx11-xcb1 libx11-6 libxcb1 libxext6 libxrandr2 \
     libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxi6 libgtk-3-0 \
     libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0 libcairo-gobject2 \
@@ -46,6 +46,11 @@ RUN apt-get update \
     libxshmfence1 libgbm1 fonts-noto-color-emoji fonts-noto-cjk fonts-freefont-ttf \
   && rm -rf /var/lib/apt/lists/* \
   && useradd --create-home --home-dir /data --shell /bin/bash maus
+# The Elestio cloud-computer bridge invokes the Docker CLI over its SSH route.
+RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-29.1.3.tgz \
+  | tar -xz -C /tmp \
+  && install -m 0755 /tmp/docker/docker /usr/local/bin/docker \
+  && rm -rf /tmp/docker
 WORKDIR /app
 COPY --from=build --chown=maus:maus /src/dist-server ./dist-server
 COPY --from=build --chown=maus:maus /src/dist ./dist
