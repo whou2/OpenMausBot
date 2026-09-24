@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { WATCHER_OPTIONS_CARD_BOT_ID, WORKINIT_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
+import {
+  ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID,
+  WATCHER_OPTIONS_CARD_BOT_ID,
+  WORKINIT_OPTIONS_CARD_BOT_ID,
+} from "../../shared/options-card.ts";
 import { callTool, type ToolCallContext } from "./agents-call.ts";
 import { availableTools, type CatalogProfile } from "./agents-catalog.ts";
 
@@ -44,6 +48,7 @@ describe("scoped options-card tool", () => {
   it("is advertised only to approved interactive bots", () => {
     expect(availableTools(profile()).map((tool) => tool.name)).toContain("create_options_card");
     expect(availableTools(profile({ botId: WORKINIT_OPTIONS_CARD_BOT_ID })).map((tool) => tool.name)).toContain("create_options_card");
+    expect(availableTools(profile({ botId: ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID })).map((tool) => tool.name)).toContain("create_options_card");
     expect(availableTools(profile({ botId: "another-bot" })).map((tool) => tool.name)).not.toContain("create_options_card");
     expect(availableTools(profile({ externalRuntime: true })).map((tool) => tool.name)).not.toContain("create_options_card");
   });

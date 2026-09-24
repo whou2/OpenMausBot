@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { OPTIONS_CARD_LIMITS, parseOptionsCardInput } from "./options-card.ts";
+import {
+  OPTIONS_CARD_LIMITS,
+  parseOptionsCardInput,
+  ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID,
+  optionsCardEnabledForBot,
+} from "./options-card.ts";
 
 describe("parseOptionsCardInput", () => {
+  it("enables native cards for Robo Chat King", () => {
+    expect(optionsCardEnabledForBot(ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID)).toBe(true);
+  });
+
   it("trims a valid card and preserves option order", () => {
     expect(parseOptionsCardInput({
       title: "  Watcher found a match  ",

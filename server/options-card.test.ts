@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { WATCHER_OPTIONS_CARD_BOT_ID, WORKINIT_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
+import {
+  ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID,
+  WATCHER_OPTIONS_CARD_BOT_ID,
+  WORKINIT_OPTIONS_CARD_BOT_ID,
+} from "../shared/options-card.ts";
 import { createOptionsCard, type OptionsCardStore } from "./options-card.ts";
 
 function watcher() {
@@ -46,6 +50,23 @@ describe("createOptionsCard", () => {
       role: "bot",
       kind: "options",
       from: { botId: WORKINIT_OPTIONS_CARD_BOT_ID, name: "WorkinIT", color: "green" },
+    }));
+  });
+
+  it("allows Robo Chat King to persist a classified action card", () => {
+    const appendMessage: OptionsCardStore["appendMessage"] = vi.fn(() => ({ id: "message-robo" }));
+    const result = createOptionsCard({
+      store: { appendMessage },
+      bot: { id: ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID, name: "Robo Chat King", color: "yellow" },
+      threadId: "thread-robo",
+      input: { title: "Path A review", subtitle: "Choose the next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] },
+    });
+
+    expect(result).toEqual({ ok: true, messageId: "message-robo" });
+    expect(appendMessage).toHaveBeenCalledWith("thread-robo", expect.objectContaining({
+      role: "bot",
+      kind: "options",
+      from: { botId: ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID, name: "Robo Chat King", color: "yellow" },
     }));
   });
 

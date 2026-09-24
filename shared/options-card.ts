@@ -1,10 +1,12 @@
 /** The bots explicitly allowed to create passive choice cards. */
 export const WATCHER_OPTIONS_CARD_BOT_ID = "f08dd8e3-f942-4eb4-8783-df32b26b88a4";
 export const WORKINIT_OPTIONS_CARD_BOT_ID = "18a9c1a0-8d70-49aa-9ee6-eb411ebd7a4c";
+export const ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID = "326c15f5-6028-46aa-8a63-31eedaed47e4";
 
 const OPTIONS_CARD_BOT_IDS = new Set([
   WATCHER_OPTIONS_CARD_BOT_ID,
   WORKINIT_OPTIONS_CARD_BOT_ID,
+  ROBO_CHAT_KING_OPTIONS_CARD_BOT_ID,
 ]);
 
 export function optionsCardEnabledForBot(botId: string): boolean {
