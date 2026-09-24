@@ -6,6 +6,31 @@ import { t } from "@/lib/i18n";
 import { parseChoices } from "../../shared/ask-question";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
+const WEB_LINK = /(https?:\/\/[^\s<]+)/gi;
+
+/** Turn URLs in the short card subtitle into safe, visible links without
+ * interpreting the rest of the bot-authored text as HTML or Markdown. */
+function LinkedSubtitle({ text }: { text: string }) {
+  return text.split(WEB_LINK).map((part, index) => {
+    if (!/^https?:\/\//i.test(part)) return part;
+    const match = part.match(/^(.*?)([.,;:!?]+)?$/);
+    const href = match?.[1] ?? part;
+    const trailing = match?.[2] ?? "";
+    return (
+      <span key={`${href}-${index}`}>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all font-medium text-accent-text underline decoration-accent/50 underline-offset-2 hover:decoration-accent"
+        >
+          {href}
+        </a>
+        {trailing}
+      </span>
+    );
+  });
+}
 
 /** First-run quiz, not a live provider ask (those carry requestId). */
 export function isOnboardingCard(message: Message): boolean {
@@ -58,9 +83,9 @@ export function OptionCard({
     <div className="w-full max-w-[840px] rounded-2xl border border-hairline/50 bg-card p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-[16px] font-semibold text-ink">{title}</div>
+          <div className="text-[16px] font-semibold text-accent-text">{title}</div>
           <div className="mt-0.5 text-[14px] text-ink-secondary">
-            {subtitle}
+            <LinkedSubtitle text={subtitle} />
           </div>
         </div>
         <button
