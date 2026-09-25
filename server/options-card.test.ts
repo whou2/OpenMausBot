@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { WATCHER_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
+import { WATCHER_OPTIONS_CARD_BOT_ID, WORKINIT_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
 import { createOptionsCard, type OptionsCardStore } from "./options-card.ts";
 
 function watcher() {
@@ -32,7 +32,21 @@ describe("createOptionsCard", () => {
     expect(appendedCard).not.toHaveProperty("tool");
   });
 
-  it("refuses every bot except Watcher without writing", () => {
+  it("persists WorkinIT's exact five choices in its own thread", () => {
+    const appendMessage = vi.fn(() => ({ id: "workinit-card" }));
+    const result = createOptionsCard({
+      store: { appendMessage } satisfies OptionsCardStore,
+      bot: { id: WORKINIT_OPTIONS_CARD_BOT_ID, name: "WorkinIT", color: "blue" },
+      threadId: "thread-workinit",
+      input: { title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] },
+    });
+    expect(result).toEqual({ ok: true, messageId: "workinit-card" });
+    expect(appendMessage).toHaveBeenCalledWith("thread-workinit", expect.objectContaining({
+      card: { title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] },
+    }));
+  });
+
+  it("refuses every bot outside the two-ID allowlist without writing", () => {
     const appendMessage = vi.fn(() => ({ id: "should-not-exist" }));
     expect(createOptionsCard({
       store: { appendMessage } satisfies OptionsCardStore,

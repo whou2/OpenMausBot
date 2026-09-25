@@ -7,7 +7,7 @@
 // Nothing here reads the environment or holds state of its own. The caller
 // passes a ToolCallContext, and the per-turn counters live on it.
 import { CREDENTIAL_TARGETS, isCredentialTargetId } from "../../shared/credential-request.ts";
-import { parseOptionsCardInput, WATCHER_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
+import { canCreateOptionsCard, parseOptionsCardInput } from "../../shared/options-card.ts";
 import { normalizeCronSchedule } from "../../shared/routine-schedule.ts";
 
 import { peerName } from "../peer-roster.ts";
@@ -413,7 +413,7 @@ export async function callTool(name: string, args: Json, context: ToolCallContex
   const { delegationTaskIdsThisTurn } = turn;
   const { api, apiResponse } = context.client;
   if (name === "create_options_card") {
-    if (BOT_ID !== WATCHER_OPTIONS_CARD_BOT_ID) {
+    if (!canCreateOptionsCard(BOT_ID)) {
       return { text: "create_options_card is not enabled for this bot.", isError: true };
     }
     const parsed = parseOptionsCardInput(args);
@@ -423,7 +423,7 @@ export async function callTool(name: string, args: Json, context: ToolCallContex
       body: JSON.stringify(parsed.value),
     });
     return {
-      text: `Rendered the native options card in this Watcher thread (message ${String(result.messageId ?? "created")}). Wait for the person's click or custom response; the card itself authorizes no external action.`,
+      text: `Rendered the native options card in this thread (message ${String(result.messageId ?? "created")}). Wait for the person's click or custom response; the card itself authorizes no external action.`,
     };
   }
   // Second lock. With sharing off the tool is not in the catalog, so a front
