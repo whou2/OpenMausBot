@@ -4,6 +4,7 @@ import { useStore, visibleMessages, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { parseChoices } from "../../shared/ask-question";
+import { optionDetailsForCard } from "../../shared/options-card";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -49,6 +50,7 @@ export function OptionCard({
   // Cards saved before the server flattened `ask_user` choices can still hold
   // `{ label }` rows; a label is drawable, an object as a React child is not.
   const options = parseChoices(card.options, LETTERS.length) ?? [];
+  const details = optionDetailsForCard({ ...card, options });
 
   const answer = (text: string) => {
     if (!text.trim()) return;
@@ -75,16 +77,16 @@ export function OptionCard({
       </div>
 
       <div className="mt-3 overflow-hidden rounded-lg border border-hairline/40">
-        {options.map((opt, i) => (
+        {details.map((opt, i) => (
           <button
-            key={opt}
+            key={opt.value}
             disabled={!!card.answered}
             onClick={() => {
-              if (opt === "Other" && !card.tool) {
+              if (opt.label === "Other" && !card.tool) {
                 customInput.current?.focus();
                 return;
               }
-              answer(opt);
+              answer(opt.value);
             }}
             className={cn(
               "flex w-full items-center gap-3 px-3 py-3 text-left text-[15px] text-ink",
@@ -93,7 +95,7 @@ export function OptionCard({
               // pure white, the same value as the card underneath, so a
               // hovered or answered row used to be invisible. `raised-hover`
               // is the one tone every skin guarantees stands off a surface.
-              (card.answeredText ?? card.answered) === opt
+              (card.answeredText ?? card.answered) === opt.value
                 ? "bg-raised-hover"
                 : "hover:bg-raised-hover/60 disabled:hover:bg-transparent",
             )}
@@ -103,7 +105,10 @@ export function OptionCard({
             <span className="flex size-6 items-center justify-center rounded-md border border-hairline/50 bg-control text-[12px] font-medium text-ink-secondary">
               {LETTERS[i]}
             </span>
-            {opt}
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{opt.label}</span>
+              <span className="mt-0.5 block text-[13px] leading-snug text-ink-secondary">{opt.description}</span>
+            </span>
           </button>
         ))}
       </div>

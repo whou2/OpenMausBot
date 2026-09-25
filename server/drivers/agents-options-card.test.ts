@@ -80,8 +80,12 @@ describe("bot-scoped options-card tool", () => {
     }, context({ client: { api, apiResponse: async () => ({ ok: true, status: 200, body: {} }) } }));
 
     expect(api).toHaveBeenCalledWith("/api/internal/options-card", {
-      method: "POST",
-      body: JSON.stringify({ title: "Possible match", subtitle: "Choose one", options: ["Ignore", "Draft"] }),
+      method: "POST", body: expect.any(String),
+    });
+    const posted = (api.mock.calls as unknown as Array<[string, { body: string }]>)[0]![1].body;
+    expect(JSON.parse(posted)).toMatchObject({
+      title: "Possible match", subtitle: "Choose one", options: ["Ignore", "Draft"],
+      optionDetails: [{ value: "Ignore", label: "Ignore" }, { value: "Draft", label: "Draft" }],
     });
     expect(result.isError).toBeFalsy();
     expect(result.text).toContain("message message-1");
@@ -93,10 +97,9 @@ describe("bot-scoped options-card tool", () => {
     const result = await callTool("create_options_card", {
       title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"],
     }, context({ botId: WORKINIT_OPTIONS_CARD_BOT_ID, threadId: "thread-workinit", client: { api, apiResponse: async () => ({ ok: true, status: 200, body: {} }) } }));
-    expect(api).toHaveBeenCalledWith("/api/internal/options-card", {
-      method: "POST",
-      body: JSON.stringify({ title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] }),
-    });
+    expect(api).toHaveBeenCalledWith("/api/internal/options-card", { method: "POST", body: expect.any(String) });
+    const posted = (api.mock.calls as unknown as Array<[string, { body: string }]>)[0]![1].body;
+    expect(JSON.parse(posted).optionDetails.map((detail: { description: string }) => detail.description.trim().length > 0)).toEqual([true, true, true, true, true]);
     expect(result.text).toContain("workinit-card");
   });
 });

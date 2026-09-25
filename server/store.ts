@@ -21,6 +21,7 @@ import { newId, type ModelSelection } from "./contracts.ts";
 import { pickBotName } from "./names.ts";
 import { redactSecretsInText } from "./redact.ts";
 import { botAvatarProfile } from "../shared/bot-avatar.ts";
+import { optionDetailsForCard } from "../shared/options-card.ts";
 import { approvalModeFor, isApprovalMode } from "../shared/approval-mode.ts";
 import type { ProfileRequestChanges } from "../shared/profile-request.ts";
 import type { TeamSetupRequest, TeamSetupResult } from "../shared/team-setup.ts";
@@ -170,6 +171,19 @@ function redactBotAuthored<T extends Omit<Message, "id" | "at"> & { at?: number 
     if (typeof card.summary === "string") card.summary = redactSecretsInText(card.summary);
     if (typeof card.held === "string") card.held = redactSecretsInText(card.held);
     if (typeof card.answeredText === "string") card.answeredText = redactSecretsInText(card.answeredText);
+    if (card.optionHints) card.optionHints = Object.fromEntries(
+      Object.entries(card.optionHints).map(([value, hint]) => [value, redactSecretsInText(hint)]),
+    );
+    if (Array.isArray(card.options)) {
+      card.optionDetails = optionDetailsForCard({
+        ...card,
+        optionDetails: card.optionDetails?.map((detail) => ({
+          ...detail,
+          label: redactSecretsInText(detail.label),
+          description: redactSecretsInText(detail.description),
+        })),
+      });
+    }
     if (card.commandAllowlist && (
       redactSecretsInText(card.commandAllowlist.command) !== card.commandAllowlist.command ||
       redactSecretsInText(card.commandAllowlist.cwd) !== card.commandAllowlist.cwd

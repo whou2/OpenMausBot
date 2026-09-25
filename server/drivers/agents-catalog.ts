@@ -191,7 +191,7 @@ const toolDefinitions = (externalRuntime: boolean) => [
   {
     name: "create_options_card",
     description:
-      "Show the person a native card with 2-6 choices in this conversation. The card is passive: a click returns the selected words as a reply and never authorizes or performs an external action. Use it for Watcher or WorkinIT review and choice steps, then wait for the person's response.",
+      "Show the person a native card with 2-6 choices in this conversation. Prefer {label, description, value?} for each choice: describe exactly what that choice would do for this task. Legacy strings receive central visible explanations. The card is passive: a click returns the selected value as a reply and never authorizes or performs an external action. Use it for Watcher or WorkinIT review and choice steps, then wait for the person's response.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -203,7 +203,14 @@ const toolDefinitions = (externalRuntime: boolean) => [
           minItems: OPTIONS_CARD_LIMITS.minOptions,
           maxItems: OPTIONS_CARD_LIMITS.maxOptions,
           uniqueItems: true,
-          items: { type: "string", minLength: 1, maxLength: OPTIONS_CARD_LIMITS.option },
+          items: { oneOf: [
+            { type: "string", minLength: 1, maxLength: OPTIONS_CARD_LIMITS.option },
+            { type: "object", additionalProperties: false, properties: {
+              label: { type: "string", minLength: 1, maxLength: OPTIONS_CARD_LIMITS.option },
+              description: { type: "string", minLength: 1, maxLength: OPTIONS_CARD_LIMITS.description },
+              value: { type: "string", minLength: 1, maxLength: OPTIONS_CARD_LIMITS.option },
+            }, required: ["label", "description"] },
+          ] },
         },
       },
       required: ["title", "subtitle", "options"],

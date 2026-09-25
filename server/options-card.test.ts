@@ -26,8 +26,9 @@ describe("createOptionsCard", () => {
       role: "bot",
       kind: "options",
       from: { botId: WATCHER_OPTIONS_CARD_BOT_ID, name: "Watcher", color: "blue" },
-      card: { title: "Possible match", subtitle: "Choose the next step", options: ["Ignore", "Draft"] },
+      card: expect.objectContaining({ title: "Possible match", subtitle: "Choose the next step", options: ["Ignore", "Draft"] }),
     });
+    expect((appendedCard?.optionDetails as Array<{ description: string }>).every((detail) => detail.description.length > 0)).toBe(true);
     expect(appendedCard).not.toHaveProperty("requestId");
     expect(appendedCard).not.toHaveProperty("tool");
   });
@@ -42,7 +43,7 @@ describe("createOptionsCard", () => {
     });
     expect(result).toEqual({ ok: true, messageId: "workinit-card" });
     expect(appendMessage).toHaveBeenCalledWith("thread-workinit", expect.objectContaining({
-      card: { title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] },
+      card: expect.objectContaining({ title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] }),
     }));
   });
 

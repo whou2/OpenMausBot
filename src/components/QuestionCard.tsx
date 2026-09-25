@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { Check, MessageCircleQuestion } from "lucide-react";
 import { useStore, type Bot, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
+import { describeOption } from "../../shared/options-card";
 import { t } from "@/lib/i18n";
 import {
   answerWithoutPreamble,
@@ -202,9 +203,9 @@ export function QuestionCard({
                 <Marker checked={picked} multi={Boolean(current.multiSelect)} />
                 <span className="min-w-0">
                   <span className="block text-[14.5px] font-medium text-ink">{option.label}</span>
-                  {option.description && (
-                    <span className="block text-[13px] leading-snug text-ink-secondary">{option.description}</span>
-                  )}
+                  <span className="block text-[13px] leading-snug text-ink-secondary">
+                    {option.description?.trim() || describeOption(option.label, current.question)}
+                  </span>
                 </span>
               </button>
             );
@@ -220,7 +221,10 @@ export function QuestionCard({
             )}
           >
             <Marker checked={draft.other} multi={Boolean(current.multiSelect)} />
-            <span className="text-[14.5px] text-ink">{t("question.other")}</span>
+            <span className="min-w-0">
+              <span className="block text-[14.5px] text-ink">{t("question.other")}</span>
+              <span className="block text-[13px] leading-snug text-ink-secondary">{describeOption("Other", current.question)}</span>
+            </span>
           </button>
           {draft.other && (
             <div className="border-t border-hairline/40 px-3 py-2.5">

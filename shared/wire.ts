@@ -440,6 +440,10 @@ export interface OptionCardData {
   title: string;
   subtitle: string;
   options: string[];
+  /** Display copy keyed by the unchanged answer values in options. */
+  optionDetails?: import("./options-card.ts").OptionDetail[];
+  /** Older ask cards may supply this map instead of optionDetails. */
+  optionHints?: Record<string, string>;
   answered?: string;
   /** What was actually answered, when the answer is words rather than a
    * verdict. */
