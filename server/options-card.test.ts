@@ -28,7 +28,8 @@ describe("createOptionsCard", () => {
       from: { botId: WATCHER_OPTIONS_CARD_BOT_ID, name: "Watcher", color: "blue" },
       card: expect.objectContaining({ title: "Possible match", subtitle: "Choose the next step", options: ["Ignore", "Draft"] }),
     });
-    expect((appendedCard?.optionDetails as Array<{ description: string }>).every((detail) => detail.description.length > 0)).toBe(true);
+    const details = appendedCard?.optionDetails as Array<{ description: string }> | undefined;
+    expect(details?.map((detail) => detail.description.length > 0)).toEqual([true, true]);
     expect(appendedCard).not.toHaveProperty("requestId");
     expect(appendedCard).not.toHaveProperty("tool");
   });
