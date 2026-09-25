@@ -35,10 +35,19 @@ FROM node:24-bookworm-slim
 # Install Chrome's Bookworm libraries directly: agent-browser --with-deps
 # invokes sudo even as root, and this image deliberately does not ship sudo.
 # git + curl: agent CLIs shell out to git; curl backs the healthcheck.
-# docker.io + openssh-client: the self-hosted VPS computer backend runs the
-# Docker CLI against the remote daemon over Docker's ssh:// transport.
+# docker-ce-cli + openssh-client: the self-hosted VPS computer backend runs the
+# Docker CLI against the remote daemon over Docker's ssh:// transport. Use
+# Docker's repository because Bookworm's docker.io client only supports API
+# 1.41, while current VPS daemons require API 1.44 or newer.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl docker.io git openssh-client \
+  && apt-get install -y --no-install-recommends ca-certificates curl \
+  && install -m 0755 -d /etc/apt/keyrings \
+  && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+  && chmod a+r /etc/apt/keyrings/docker.asc \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    > /etc/apt/sources.list.d/docker.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends docker-ce-cli git openssh-client \
     libxcb-shm0 libx11-xcb1 libx11-6 libxcb1 libxext6 libxrandr2 \
     libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxi6 libgtk-3-0 \
     libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0 libcairo-gobject2 \

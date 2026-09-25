@@ -50,7 +50,11 @@ jobs:
           docker exec omb curl -sf http://127.0.0.1:8799/ | grep -qi "<html" || { docker logs omb; echo "UI not served"; exit 1; }
           # The self-hosted VPS backend shells out to both clients at runtime.
           # The hosted image does not run a local Docker daemon.
-          docker exec omb docker --version
+          docker_version=$(docker exec omb docker --version)
+          echo "$docker_version"
+          grep -Eq 'version (2[5-9]|[3-9][0-9])\.' <<<"$docker_version" || {
+            echo "Docker client is too old for VPS daemons requiring API 1.44"; exit 1;
+          }
           docker exec omb ssh -V
           docker logs omb | tail -5
       - name: Prove the image finds its enterprise layer
