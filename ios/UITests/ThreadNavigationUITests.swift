@@ -26,9 +26,9 @@ final class ThreadNavigationUITests: XCTestCase {
         openGmail(in: app)
 
         let topBarThreads = app.buttons["header-threads"]
-        // The chat header settles late on a loaded CI runner. 5s timed out
-        // here while the thread open itself was correct, same as assertThread.
-        XCTAssertTrue(topBarThreads.waitForExistence(timeout: 10))
+        // Wait for the loaded header to be actionable, not merely present in
+        // a stale accessibility snapshot while the island animation settles.
+        assertHittable(topBarThreads, timeout: 20)
         topBarThreads.tap()
         let iCloud = app.buttons["thread-preview-icloud"]
         XCTAssertTrue(iCloud.waitForExistence(timeout: 5))
@@ -285,11 +285,12 @@ final class ThreadNavigationUITests: XCTestCase {
         XCTAssertTrue(error.waitForExistence(timeout: 5))
         XCTAssertTrue(error.label.contains("Deleted 1 of 2 threads"))
         XCTAssertTrue(error.label.contains("Synthetic deletion failure"))
-        assertMissing(app.buttons["select-thread-preview-icloud"])
+        // The error banner is published before SwiftUI finishes removing the
+        // successfully deleted row from the accessibility hierarchy.
+        assertMissing(app.buttons["select-thread-preview-icloud"], timeout: 15)
         let remaining = app.buttons["select-thread-preview-weekend"]
-        XCTAssertTrue(remaining.exists)
-        XCTAssertTrue(remaining.label.contains("Deselect"))
-        XCTAssertTrue(app.buttons["delete-selected-threads"].label.contains("1"))
+        assertLabel(remaining, contains: "Deselect", timeout: 10)
+        assertLabel(app.buttons["delete-selected-threads"], contains: "1", timeout: 10)
         recordScreenshot("Partial bulk deletion keeps the remaining thread selected", in: app)
     }
 
@@ -332,6 +333,9 @@ final class ThreadNavigationUITests: XCTestCase {
         XCTAssertFalse(app.buttons["thread.preview-routine"].exists)
         recordScreenshot("Expanded home threads with Email folder", in: app)
         gmail.tap()
+        // Do not let callers query the chat hierarchy while the roster-to-chat
+        // navigation transition is still publishing its accessibility tree.
+        assertThread("Triage Gmail", in: app)
     }
 
     @MainActor
@@ -359,11 +363,27 @@ final class ThreadNavigationUITests: XCTestCase {
     }
 
     @MainActor
-    private func assertMissing(_ element: XCUIElement) {
+    private func assertHittable(_ element: XCUIElement, timeout: TimeInterval) {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true AND hittable == true"), object: element
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed)
+    }
+
+    @MainActor
+    private func assertLabel(_ element: XCUIElement, contains text: String, timeout: TimeInterval) {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true AND label CONTAINS %@", text), object: element
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed)
+    }
+
+    @MainActor
+    private func assertMissing(_ element: XCUIElement, timeout: TimeInterval = 5) {
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "exists == false"), object: element
         )
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed)
     }
 
     @MainActor
