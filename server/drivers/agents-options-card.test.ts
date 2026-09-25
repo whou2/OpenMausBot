@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { WATCHER_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
+import { WATCHER_OPTIONS_CARD_BOT_ID, WORKINIT_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
 import { callTool, type ToolCallContext } from "./agents-call.ts";
 import { availableTools, type CatalogProfile } from "./agents-catalog.ts";
 
@@ -40,9 +40,10 @@ function context(overrides: Partial<ToolCallContext> = {}): ToolCallContext {
   };
 }
 
-describe("Watcher options-card tool", () => {
-  it("is advertised only to Watcher interactive turns", () => {
+describe("bot-scoped options-card tool", () => {
+  it("is advertised only to Watcher and WorkinIT interactive turns", () => {
     expect(availableTools(profile()).map((tool) => tool.name)).toContain("create_options_card");
+    expect(availableTools(profile({ botId: WORKINIT_OPTIONS_CARD_BOT_ID })).map((tool) => tool.name)).toContain("create_options_card");
     expect(availableTools(profile({ botId: "another-bot" })).map((tool) => tool.name)).not.toContain("create_options_card");
     expect(availableTools(profile({ externalRuntime: true })).map((tool) => tool.name)).not.toContain("create_options_card");
   });
@@ -85,5 +86,17 @@ describe("Watcher options-card tool", () => {
     expect(result.isError).toBeFalsy();
     expect(result.text).toContain("message message-1");
     expect(result.text).toContain("authorizes no external action");
+  });
+
+  it("allows WorkinIT to post from its own thread", async () => {
+    const api = vi.fn(async () => ({ messageId: "workinit-card" }));
+    const result = await callTool("create_options_card", {
+      title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"],
+    }, context({ botId: WORKINIT_OPTIONS_CARD_BOT_ID, threadId: "thread-workinit", client: { api, apiResponse: async () => ({ ok: true, status: 200, body: {} }) } }));
+    expect(api).toHaveBeenCalledWith("/api/internal/options-card", {
+      method: "POST",
+      body: JSON.stringify({ title: "DJ Products task", subtitle: "Choose a next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] }),
+    });
+    expect(result.text).toContain("workinit-card");
   });
 });

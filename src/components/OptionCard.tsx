@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useStore, visibleMessages, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
@@ -36,6 +36,7 @@ export function OptionCard({
 }) {
   const { state, dispatch } = useStore();
   const [custom, setCustom] = useState("");
+  const customInput = useRef<HTMLInputElement>(null);
   const card = message.card;
   const bot = state.bots.find((candidate) => candidate.id === botId);
   const transcript = bot ? visibleMessages(bot) : [];
@@ -78,7 +79,13 @@ export function OptionCard({
           <button
             key={opt}
             disabled={!!card.answered}
-            onClick={() => answer(opt)}
+            onClick={() => {
+              if (opt === "Other" && !card.tool) {
+                customInput.current?.focus();
+                return;
+              }
+              answer(opt);
+            }}
             className={cn(
               "flex w-full items-center gap-3 px-3 py-3 text-left text-[15px] text-ink",
               i > 0 && "border-t border-hairline/40",
@@ -105,6 +112,7 @@ export function OptionCard({
           allow/deny, so typing here used to fail silently */}
       {!card.answered && !card.tool && (
         <input
+          ref={customInput}
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && answer(custom)}

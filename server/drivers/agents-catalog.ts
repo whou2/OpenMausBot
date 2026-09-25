@@ -11,7 +11,7 @@
 // agents-catalog-wire.test.ts: change a description or a schema on purpose,
 // then update the goldens there.
 import { CREDENTIAL_TARGETS } from "../../shared/credential-request.ts";
-import { OPTIONS_CARD_LIMITS, WATCHER_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
+import { canCreateOptionsCard, OPTIONS_CARD_LIMITS } from "../../shared/options-card.ts";
 import { agentToolAnnotations } from "../agent-tool-policy.ts";
 
 /** Which tools a turn is shown. The harness decides each of these when it
@@ -191,7 +191,7 @@ const toolDefinitions = (externalRuntime: boolean) => [
   {
     name: "create_options_card",
     description:
-      "Show the person a native card with 2-6 choices in this Watcher conversation. The card is passive: a click returns the selected words as a reply and never authorizes or performs an external action. Use it for Watcher's review and draft-selection steps, then wait for the person's response.",
+      "Show the person a native card with 2-6 choices in this conversation. The card is passive: a click returns the selected words as a reply and never authorizes or performs an external action. Use it for Watcher or WorkinIT review and choice steps, then wait for the person's response.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -743,14 +743,14 @@ const VOICE_TOOL_NAMES = new Set(["send_voice_note"]);
 const ROOM_ONLY_TOOLS = new Set(["list_room_targets", "coordinate_bots"]);
 const ROOM_REPLACED_TOOLS = new Set(["ask_bot", "delegate_bot", "check_delegation", "wait_delegation", "start_thread", "send_to_thread", "wait_thread"]);
 const EXTERNAL_TOOL_NAMES = new Set(["list_bots", "ask_bot", "delegate_bot", "check_delegation", "wait_delegation"]);
-const WATCHER_TOOL_NAMES = new Set(["create_options_card"]);
+const OPTIONS_CARD_TOOL_NAMES = new Set(["create_options_card"]);
 
 /** The tools one turn is shown, exactly as tools/list serializes them. */
 export function availableTools(profile: CatalogProfile) {
   const TOOLS = toolDefinitions(profile.externalRuntime);
-  const BOT_SCOPED_TOOLS = profile.botId === WATCHER_OPTIONS_CARD_BOT_ID
+  const BOT_SCOPED_TOOLS = canCreateOptionsCard(profile.botId)
     ? TOOLS
-    : TOOLS.filter((tool) => !WATCHER_TOOL_NAMES.has(tool.name));
+    : TOOLS.filter((tool) => !OPTIONS_CARD_TOOL_NAMES.has(tool.name));
   const AUTHORING_TOOLS = profile.skillAuthoring
     ? BOT_SCOPED_TOOLS
     : BOT_SCOPED_TOOLS.filter((tool) => !SKILL_TOOL_NAMES.has(tool.name));

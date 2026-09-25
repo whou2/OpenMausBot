@@ -1,6 +1,6 @@
 import {
   parseOptionsCardInput,
-  WATCHER_OPTIONS_CARD_BOT_ID,
+  canCreateOptionsCard,
   type OptionsCardInput,
 } from "../shared/options-card.ts";
 import type { MausColor } from "../shared/wire.ts";
@@ -38,7 +38,7 @@ export function createOptionsCard(args: {
   threadId: string;
   input: unknown;
 }): CreateOptionsCardResult {
-  if (args.bot.id !== WATCHER_OPTIONS_CARD_BOT_ID) {
+  if (!canCreateOptionsCard(args.bot.id)) {
     return { ok: false, status: 403, error: "create_options_card is not enabled for this bot." };
   }
   const parsed = parseOptionsCardInput(args.input);

@@ -1,5 +1,12 @@
-/** The one bot allowed to create passive choice cards for the Watcher flow. */
+/** The existing Watcher card owner. */
 export const WATCHER_OPTIONS_CARD_BOT_ID = "f08dd8e3-f942-4eb4-8783-df32b26b88a4";
+/** WorkinIT may also create passive cards for its ClickUp action flow. */
+export const WORKINIT_OPTIONS_CARD_BOT_ID = "18a9c1a0-8d70-49aa-9ee6-eb411ebd7a4c";
+
+/** Keep the card capability limited to these exact two bots at every gate. */
+export function canCreateOptionsCard(botId: string): boolean {
+  return botId === WATCHER_OPTIONS_CARD_BOT_ID || botId === WORKINIT_OPTIONS_CARD_BOT_ID;
+}
 
 /** Keep agent-authored cards small enough to remain useful on desktop and mobile. */
 export const OPTIONS_CARD_LIMITS = {
