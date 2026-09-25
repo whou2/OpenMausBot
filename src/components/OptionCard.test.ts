@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 
-import { shouldHideOnboardingCard } from "./OptionCard";
+import { OptionCard, shouldHideOnboardingCard } from "./OptionCard";
 import type { Message } from "@/state/store";
+
+vi.mock("@/state/store", () => ({
+  useStore: () => ({ state: { bots: [{ id: "bot", messages: [] }] }, dispatch: vi.fn() }),
+  visibleMessages: () => [],
+}));
 
 const msg = (partial: Partial<Message> & Pick<Message, "id" | "kind">): Message => ({
   role: "bot",
@@ -63,5 +70,20 @@ describe("shouldHideOnboardingCard", () => {
       },
     });
     expect(shouldHideOnboardingCard(question, [user, question])).toBe(false);
+  });
+});
+
+describe("OptionCard explanations", () => {
+  it("renders rich and legacy descriptions under their labels", () => {
+    const card = msg({ id: "rich", kind: "options", card: {
+      title: "Review quote", subtitle: "Choose the next step", options: ["recommended-id", "Other", "Custom"],
+      optionDetails: [{ value: "recommended-id", label: "Recommended", description: "Draft the quote for review." }],
+    } });
+    const html = renderToStaticMarkup(createElement(OptionCard, { botId: "bot", message: card }));
+    expect(html).toContain("Draft the quote for review.");
+    expect(html).toContain("Enter a custom instruction for Review quote.");
+    expect(html).toContain("Send “Custom” as your choice for Review quote");
+    expect(html).toContain("Recommended");
+    expect(html).not.toContain("recommended-id</span>");
   });
 });

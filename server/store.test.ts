@@ -26,6 +26,23 @@ describe("Store", () => {
     rmSync(DATA_DIR, { recursive: true, force: true });
   });
 
+  it("serializes explanations for legacy cards without changing answer values", () => {
+    const store = new Store(selection);
+    const bot = store.createBot({}, { seedMessages: false });
+    const message = store.appendMessage(bot.threadId, { role: "bot", kind: "options", card: {
+      title: "Review quote", subtitle: "Choose a response", options: ["Recommended", "Other", "Custom"],
+      optionHints: { Custom: "Send the custom review path." },
+    } });
+    expect(message.card?.options).toEqual(["Recommended", "Other", "Custom"]);
+    expect(message.card?.optionDetails?.map((detail) => detail.description.trim().length > 0)).toEqual([true, true, true]);
+    expect(message.card?.optionDetails?.[2]?.description).toBe("Send the custom review path.");
+    const database = new DatabaseSync(join(DATA_DIR, "messages.db"), { readOnly: true });
+    const row = database.prepare("SELECT json FROM messages WHERE thread_id = ? AND id = ?").get(bot.threadId, message.id) as { json: string };
+    expect(JSON.parse(row.json).card.optionDetails).toEqual(message.card?.optionDetails);
+    database.close();
+    expect(new Store(selection).messagesFor(bot.threadId).find((entry) => entry.id === message.id)?.card?.optionDetails).toEqual(message.card?.optionDetails);
+  });
+
   it("renames populated teams without changing members, conversations, grants or computer identity", () => {
     const store = new Store(selection);
     const chief = store.createBot({ section: "Delivery" });
