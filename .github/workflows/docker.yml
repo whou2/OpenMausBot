@@ -48,6 +48,10 @@ jobs:
           done
           # the renderer is served by the server itself (OMB_STATIC_DIR)
           docker exec omb curl -sf http://127.0.0.1:8799/ | grep -qi "<html" || { docker logs omb; echo "UI not served"; exit 1; }
+          # The self-hosted VPS backend shells out to both clients at runtime.
+          # The hosted image does not run a local Docker daemon.
+          docker exec omb docker --version
+          docker exec omb ssh -V
           docker logs omb | tail -5
       - name: Prove the image finds its enterprise layer
         # The image ships dist-server/ alone, so the bundled layer sits inside
