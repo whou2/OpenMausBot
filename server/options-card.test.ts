@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { WATCHER_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
+import { WATCHER_OPTIONS_CARD_BOT_ID, WORKINIT_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
 import { createOptionsCard, type OptionsCardStore } from "./options-card.ts";
 
 function watcher() {
@@ -32,7 +32,24 @@ describe("createOptionsCard", () => {
     expect(appendedCard).not.toHaveProperty("tool");
   });
 
-  it("refuses every bot except Watcher without writing", () => {
+  it("allows WorkinIT to persist the same passive card shape", () => {
+    const appendMessage: OptionsCardStore["appendMessage"] = vi.fn(() => ({ id: "message-workinit" }));
+    const result = createOptionsCard({
+      store: { appendMessage },
+      bot: { id: WORKINIT_OPTIONS_CARD_BOT_ID, name: "WorkinIT", color: "green" },
+      threadId: "thread-workinit",
+      input: { title: "Assigned work", subtitle: "Choose the next step", options: ["Aggressive", "Recommended", "Safe", "Do nothing", "Other"] },
+    });
+
+    expect(result).toEqual({ ok: true, messageId: "message-workinit" });
+    expect(appendMessage).toHaveBeenCalledWith("thread-workinit", expect.objectContaining({
+      role: "bot",
+      kind: "options",
+      from: { botId: WORKINIT_OPTIONS_CARD_BOT_ID, name: "WorkinIT", color: "green" },
+    }));
+  });
+
+  it("refuses bots outside the explicit allowlist without writing", () => {
     const appendMessage = vi.fn(() => ({ id: "should-not-exist" }));
     expect(createOptionsCard({
       store: { appendMessage } satisfies OptionsCardStore,

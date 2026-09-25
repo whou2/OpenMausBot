@@ -1,5 +1,15 @@
-/** The one bot allowed to create passive choice cards for the Watcher flow. */
+/** The bots explicitly allowed to create passive choice cards. */
 export const WATCHER_OPTIONS_CARD_BOT_ID = "f08dd8e3-f942-4eb4-8783-df32b26b88a4";
+export const WORKINIT_OPTIONS_CARD_BOT_ID = "18a9c1a0-8d70-49aa-9ee6-eb411ebd7a4c";
+
+const OPTIONS_CARD_BOT_IDS = new Set([
+  WATCHER_OPTIONS_CARD_BOT_ID,
+  WORKINIT_OPTIONS_CARD_BOT_ID,
+]);
+
+export function optionsCardEnabledForBot(botId: string): boolean {
+  return OPTIONS_CARD_BOT_IDS.has(botId);
+}
 
 /** Keep agent-authored cards small enough to remain useful on desktop and mobile. */
 export const OPTIONS_CARD_LIMITS = {
